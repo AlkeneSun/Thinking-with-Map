@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Thinking with Map 面向算法工程师的通俗解读与 2026 Agent 进展评价">
+  <meta property="og:title" content="Thinking with Map 工程解读">
+  <meta property="og:description" content="从算法工程视角理解地图增强 agent、RL 训练、parallel TTS 与 2026 agent 进展。">
+  <title>Thinking with Map 工程解读</title>
+  <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+  <style>
+    body {
+      background: #f7f8fa;
+      color: #1f2933;
+      line-height: 1.8;
+    }
+    .guide-hero {
+      background: linear-gradient(135deg, #eef4ff 0%, #ffffff 48%, #f2f7f0 100%);
+      border-bottom: 1px solid #e5e8ef;
+    }
+    .guide-kicker {
+      color: #3860a8;
+      font-weight: 700;
+      letter-spacing: 0;
+      margin-bottom: 0.75rem;
+    }
+    .guide-title {
+      font-family: 'Google Sans', 'Noto Sans', sans-serif;
+      font-size: clamp(2.1rem, 4vw, 3.8rem);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: 0;
+      color: #14213d;
+    }
+    .guide-subtitle {
+      max-width: 820px;
+      margin: 1.25rem auto 0;
+      color: #52606d;
+      font-size: 1.1rem;
+    }
+    .guide-section {
+      padding: 3rem 1.5rem;
+    }
+    .guide-panel {
+      background: #fff;
+      border: 1px solid #e3e7ee;
+      border-radius: 8px;
+      padding: 1.5rem;
+      height: 100%;
+    }
+    .guide-panel h3 {
+      color: #152238;
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-bottom: 0.75rem;
+    }
+    .guide-card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    .guide-step {
+      border-left: 4px solid #4d7fd6;
+      padding-left: 1rem;
+      margin: 1rem 0;
+    }
+    .guide-callout {
+      background: #f0f6ff;
+      border: 1px solid #cfe0ff;
+      border-radius: 8px;
+      padding: 1.2rem 1.35rem;
+      margin: 1.5rem 0;
+    }
+    .guide-warning {
+      background: #fff8ed;
+      border-color: #f2d6a2;
+    }
+    .guide-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      background: #fff;
+    }
+    .guide-table th,
+    .guide-table td {
+      border: 1px solid #dfe5ec;
+      padding: 0.8rem;
+      vertical-align: top;
+    }
+    .guide-table th {
+      background: #f3f6fb;
+      color: #1f344f;
+    }
+    .guide-figure {
+      border-radius: 8px;
+      border: 1px solid #dfe5ec;
+      background: #fff;
+      padding: 0.75rem;
+      margin: 1.5rem 0;
+    }
+    .guide-figure img {
+      border-radius: 4px;
+      width: 100%;
+    }
+    .guide-links a {
+      margin: 0.25rem;
+    }
+    .guide-list li {
+      margin-bottom: 0.55rem;
+    }
+    .guide-footer-note {
+      color: #697586;
+      font-size: 0.95rem;
+    }
+    @media (max-width: 900px) {
+      .guide-card-grid {
+        grid-template-columns: 1fr;
+      }
+      .guide-section {
+        padding: 2.2rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero guide-hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop has-text-centered">
+        <div class="guide-kicker">面向算法工程师的通俗解读</div>
+        <h1 class="guide-title">Thinking with Map 到底解决了什么问题</h1>
+        <p class="guide-subtitle">
+          这篇论文不是简单把地图 API 接到 VLM 后面，而是在做一件更工程化的事:
+          让视觉模型像一个会查地图的定位侦探，在候选假设、外部证据和最终坐标之间反复闭环。
+        </p>
+        <div class="guide-links mt-5">
+          <a class="button is-dark is-rounded" href="index.html">Back to Project Page</a>
+          <a class="button is-link is-rounded" href="https://arxiv.org/abs/2601.05432" target="_blank">Paper</a>
+          <a class="button is-link is-light is-rounded" href="https://github.com/AMAP-ML/Thinking-with-Map" target="_blank">Code</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">一句话版本</h2>
+      <div class="guide-callout">
+        <p>
+          <strong>Thinking with Map</strong> 把图像地理定位从“模型凭世界知识猜地点”，推进到“模型提出候选地点，调用地图/POI/静态地图工具验证，再通过 RL 和并行采样提升成功率”。
+          对算法工程师来说，它的价值不在于某个单点 trick，而在于把 <strong>环境工具、轨迹训练、奖励函数和测试时扩展</strong> 串成了一个可复现系统。
+        </p>
+      </div>
+
+      <div class="guide-card-grid">
+        <div class="guide-panel">
+          <h3>它不是普通 RAG</h3>
+          <p>RAG 通常是检索文档再回答。这里检索的是地图世界: POI、道路、周边空间关系、静态地图和卫星图，证据结构更接近真实环境。</p>
+        </div>
+        <div class="guide-panel">
+          <h3>它不是单轮工具调用</h3>
+          <p>核心是 agent-in-the-map loop: 看图、猜、查、修正、再查。地理定位尤其需要这种来回试探，因为第一眼线索经常误导。</p>
+        </div>
+        <div class="guide-panel">
+          <h3>它不是只靠大模型变强</h3>
+          <p>论文真正聪明的地方是承认单次推理会漂，于是用 RL 提升工具使用，再用 parallel TTS 多路探索，让 verifier 最后收口。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-section hero is-light">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">算法工程师怎么理解这套 pipeline</h2>
+      <p>
+        如果把它翻译成工程系统，可以看成 5 个模块:
+      </p>
+      <div class="guide-step">
+        <strong>1. 视觉线索抽取:</strong> 模型先从图片中找文字、店铺、建筑、植被、道路样式、语言、车牌等线索。
+      </div>
+      <div class="guide-step">
+        <strong>2. 候选假设生成:</strong> 它不急着报坐标，而是提出若干城市、街区或 POI 假设。
+      </div>
+      <div class="guide-step">
+        <strong>3. 地图工具验证:</strong> 通过 AMap / Google Map / search / static map 等工具查 POI 与空间关系。
+      </div>
+      <div class="guide-step">
+        <strong>4. 距离奖励训练:</strong> 输出经纬度后，用 ground truth 算 geodesic distance，按 500m、2km、10km、25km、200km、750km 分段给 reward。
+      </div>
+      <div class="guide-step">
+        <strong>5. 并行测试时扩展:</strong> 同一张图采样多条轨迹，再让 verifier 综合候选答案，挑一个更稳的最终定位。
+      </div>
+
+      <div class="guide-figure">
+        <img src="static/images/pipeline.jpg" alt="Thinking with Map pipeline">
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">代码里对应到哪里</h2>
+      <table class="guide-table">
+        <thead>
+          <tr>
+            <th>论文概念</th>
+            <th>代码位置</th>
+            <th>工程含义</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>MAPBench 数据</td>
+            <td><code>verl/examples/data_preprocess/preprocess_thinking_with_map.py</code></td>
+            <td>把图片、prompt、ground truth、tool kwargs 打包成 parquet 样本。</td>
+          </tr>
+          <tr>
+            <td>工具协议</td>
+            <td><code>verl/geoagent_scripts/config/*_tool_config.yaml</code></td>
+            <td>用 OpenAI function-call 风格声明工具 schema、URL、限流和超时。</td>
+          </tr>
+          <tr>
+            <td>地图/搜索工具</td>
+            <td><code>verl/verl/tools/map_tool.py</code></td>
+            <td>把 AMap、Google Map、静态图、卫星图封装成统一 ToolResponse。</td>
+          </tr>
+          <tr>
+            <td>工具服务</td>
+            <td><code>verl/tool_server/api_server_redis.py</code></td>
+            <td>FastAPI + Redis 缓存 + 并发保护，解决大规模 rollout 反复查 API 的问题。</td>
+          </tr>
+          <tr>
+            <td>RL 奖励</td>
+            <td><code>verl/verl/utils/reward_score/localization.py</code></td>
+            <td>解析 JSON 坐标，用地理距离分段打分。</td>
+          </tr>
+          <tr>
+            <td>并行 TTS</td>
+            <td><code>parallel_tts/</code></td>
+            <td>把多条轨迹 regroup 成同图候选集，再交给 verifier 做最终选择。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="guide-section hero is-light">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">结合 2026 Agent 进展看，它站在哪个位置</h2>
+      <p>
+        2026 年 agent 的主线已经很清楚: 从聊天式助手走向能使用工具、能操作环境、能长时间执行任务的系统。
+        OpenAI 的 Computer-Using Agent 把视觉、GUI 操作和强化学习放到一起；Codex 类 agent 开始处理更长、更跨职能的软件与知识工作；
+        Anthropic 的 Claude Code 研究也显示，工程师越来越像 agent 的任务编排者，而不是逐行代码操作者。
+      </p>
+
+      <div class="guide-callout">
+        <p>
+          在这个大背景下，<strong>Thinking with Map 是一个很接地气的垂直 agent 范例</strong>:
+          它不追求“通用万能代理”，而是选了一个边界清晰、评价明确、工具价值极高的任务，把 agent 能力做深。
+        </p>
+      </div>
+
+      <table class="guide-table">
+        <thead>
+          <tr>
+            <th>2026 agent 方向</th>
+            <th>Thinking with Map 的对应点</th>
+            <th>我的工程评价</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>工具使用从可选变成核心能力</td>
+            <td>地图、POI、搜索、图像放大都在 rollout 内部</td>
+            <td>方向正确。地理定位不接地图，等于让模型闭眼走路。</td>
+          </tr>
+          <tr>
+            <td>RL 训练 agent 行为</td>
+            <td>用 GRPO + 距离奖励训练多轮工具使用</td>
+            <td>比单纯 SFT 更合理，因为工具调用策略很难靠静态答案学全。</td>
+          </tr>
+          <tr>
+            <td>长任务需要多路探索</td>
+            <td>parallel TTS 对同图生成多条轨迹，再 verifier 收口</td>
+            <td>很实用。定位任务里第一条推理链经常走偏，多采样比硬凹单链更靠谱。</td>
+          </tr>
+          <tr>
+            <td>Agent 评测越来越强调真实环境</td>
+            <td>MAPBench 来自真实图片，并用米级距离评估</td>
+            <td>比纯问答 benchmark 更贴近工程，但工具 API 的区域覆盖会影响泛化。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">接地气评价: 强在哪里，短板在哪里</h2>
+      <div class="columns">
+        <div class="column">
+          <div class="guide-panel">
+            <h3>强点</h3>
+            <ul class="guide-list">
+              <li><strong>任务选得好:</strong> 地理定位天然需要外部地图，工具增强不是摆设。</li>
+              <li><strong>奖励清楚:</strong> 经纬度距离能直接算，避免很多主观打分噪声。</li>
+              <li><strong>系统闭环完整:</strong> 数据、工具、RL、评测、TTS 都有对应代码。</li>
+              <li><strong>parallel TTS 很务实:</strong> 地理定位有多解和误导线索，多路径探索能明显降低单链失误。</li>
+            </ul>
+          </div>
+        </div>
+        <div class="column">
+          <div class="guide-panel">
+            <h3>短板</h3>
+            <ul class="guide-list">
+              <li><strong>工程成熟度还不算高:</strong> tool server 和 Google 工具链仍有研究原型痕迹。</li>
+              <li><strong>默认路径偏 AMap:</strong> 中国区域支持更完整，全球泛化依赖 Google/search 路径继续补强。</li>
+              <li><strong>TTS 还偏离线:</strong> 当前更像脚本后处理，尚未整合成统一 serving pipeline。</li>
+              <li><strong>工具噪声会反噬:</strong> 地图检索错了，agent 会很自信地沿错误线索推下去。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="guide-callout guide-warning">
+        <p>
+          如果你是算法工程师，我建议把它看成一个“可学习的工具型 agent recipe”，而不是一个已经完全产品化的定位服务。
+          真正值得借鉴的是: 任务环境怎么定义、工具 schema 怎么接入、reward 怎么写、并行轨迹怎么做 verifier。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-section hero is-light">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">如果我要继续工程化，会优先改什么</h2>
+      <ol class="guide-list">
+        <li><strong>统一中国/海外工具路由:</strong> 不要让 AMap config 和 Google config 靠人工切换，应该按区域和置信度自动选。</li>
+        <li><strong>把 parallel TTS 做成一条命令:</strong> rollout、regroup、verifier、metrics 应该收敛成一个可复现 pipeline。</li>
+        <li><strong>修 tool server 的边角问题:</strong> 构造器参数、Google API key 属性、static map 异常路径都应补测试。</li>
+        <li><strong>做工具结果可信度建模:</strong> 不是查到 POI 就信，要给工具结果和视觉线索之间的匹配程度打分。</li>
+        <li><strong>沉淀失败案例库:</strong> 地理定位最值钱的是错例，尤其是相似商圈、连锁店、假地标、旧地图数据。</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">参考与背景阅读</h2>
+      <ul class="guide-list">
+        <li><a href="https://arxiv.org/abs/2601.05432" target="_blank">Thinking with Map: Reinforced Parallel Map-Augmented Agent for Geolocalization</a></li>
+        <li><a href="https://openai.com/index/computer-using-agent/" target="_blank">OpenAI: Computer-Using Agent</a></li>
+        <li><a href="https://openai.com/index/how-agents-are-transforming-work/" target="_blank">OpenAI: How agents are transforming work</a></li>
+        <li><a href="https://www.anthropic.com/research/claude-code-expertise" target="_blank">Anthropic: Agentic coding and persistent returns to expertise</a></li>
+        <li><a href="https://www.swebench.com/" target="_blank">SWE-bench Leaderboards</a></li>
+      </ul>
+      <p class="guide-footer-note">
+        本文写于 2026-07-08，面向算法工程师做工程解读与判断，不替代论文原文。
+      </p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container is-max-desktop">
+      <div class="content has-text-centered">
+        <p>
+          <a href="index.html">Project Page</a> ·
+          <a href="https://github.com/AMAP-ML/Thinking-with-Map" target="_blank">GitHub</a> ·
+          <a href="https://arxiv.org/abs/2601.05432" target="_blank">arXiv</a>
+        </p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
