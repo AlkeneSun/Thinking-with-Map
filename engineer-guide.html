@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Thinking with Map 面向算法工程师的通俗解读与 2026 Agent 进展评价">
+  <meta name="description" content="Thinking with Map 面向算法工程师的深度实现分析、2026 年 6 月垂类 Agent 段位评价与 4*A100 复现路线">
   <meta property="og:title" content="Thinking with Map 工程解读">
-  <meta property="og:description" content="从算法工程视角理解地图增强 agent、RL 训练、parallel TTS 与 2026 agent 进展。">
+  <meta property="og:description" content="从算法工程视角理解地图增强 agent、RL 训练、parallel TTS、包装成分和 4*A100 快速复现。">
   <title>Thinking with Map 工程解读</title>
   <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
   <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
@@ -130,11 +130,12 @@
   <section class="hero guide-hero">
     <div class="hero-body">
       <div class="container is-max-desktop has-text-centered">
-        <div class="guide-kicker">面向算法工程师的通俗解读</div>
-        <h1 class="guide-title">Thinking with Map 到底解决了什么问题</h1>
+        <div class="guide-kicker">面向算法工程师的深度实现分析</div>
+        <h1 class="guide-title">Thinking with Map 到底做得怎么样</h1>
         <p class="guide-subtitle">
-          这篇论文不是简单把地图 API 接到 VLM 后面，而是在做一件更工程化的事:
-          让视觉模型像一个会查地图的定位侦探，在候选假设、外部证据和最终坐标之间反复闭环。
+          这篇论文不是简单把地图 API 接到 VLM 后面。它更像一个垂直 agent 样板:
+          图像线索抽取、地图/POI 工具、距离奖励、GRPO、多路轨迹和 verifier 都串起来了。
+          但代码也保留了明显的研究原型痕迹，离开箱即用的生产系统还有距离。
         </p>
         <div class="guide-links mt-5">
           <a class="button is-dark is-rounded" href="index.html">Back to Project Page</a>
@@ -147,14 +148,254 @@
 
   <section class="guide-section">
     <div class="container is-max-desktop">
-      <h2 class="title is-3">一句话版本</h2>
+      <h2 class="title is-3">一句话评价</h2>
       <div class="guide-callout">
         <p>
-          <strong>Thinking with Map</strong> 把图像地理定位从“模型凭世界知识猜地点”，推进到“模型提出候选地点，调用地图/POI/静态地图工具验证，再通过 RL 和并行采样提升成功率”。
-          对算法工程师来说，它的价值不在于某个单点 trick，而在于把 <strong>环境工具、轨迹训练、奖励函数和测试时扩展</strong> 串成了一个可复现系统。
+          <strong>Thinking with Map 是 2026 年垂直 agent 研究里中上段位、很值得拆的工作。</strong>
+          它强在任务选得准、工具价值真实、reward 可计算、系统闭环完整；弱在默认复现脚本偏 64 卡集群、AMap 路径成熟但全球路径粗糙、tool server 有代码缝隙、parallel TTS 还偏离线脚本。
+          简单说: 方法是真东西，包装也有一点，但不是空包装。
         </p>
       </div>
 
+      <div class="guide-card-grid">
+        <div class="guide-panel">
+          <h3>真实亮点</h3>
+          <p>它把“看地图”变成了 agent 的环境交互，而不是把地图搜索结果硬塞进 prompt。这个方向很实，因为地理定位天然依赖外部世界。</p>
+        </div>
+        <div class="guide-panel">
+          <h3>工程含金量</h3>
+          <p>数据预处理、tool schema、FastAPI 工具服务、Redis 缓存、GRPO 训练、distance reward、TTS 后处理都有代码落点，不是只画 pipeline。</p>
+        </div>
+        <div class="guide-panel">
+          <h3>主要水分</h3>
+          <p>“全球定位”和“完整 agent 系统”的叙事比代码成熟度更饱满。默认训练路径明显偏中国 AMap，Google/global 路径还需要工程补课。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-section hero is-light">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">2026 年 6 月垂类 Agent 里，它算什么段位</h2>
+      <p>
+        到 2026 年 6 月，agent 主线已经从“能不能调用工具”变成“能不能在真实环境中长程执行、验证、纠错”。
+        OpenAI Codex 代表的是软件工程垂类 agent，强调沙箱、读写代码、运行测试、并行任务；Anthropic Claude Code 的使用报告也显示，agent 开始从补全工具走向端到端任务执行，但人类的领域判断仍然很关键。
+        SWE-bench 系列则把社区注意力拉到真实 issue、真实仓库、真实测试上。
+      </p>
+
+      <table class="guide-table">
+        <thead>
+          <tr>
+            <th>维度</th>
+            <th>顶级通用/代码 Agent 的状态</th>
+            <th>Thinking with Map 的位置</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>环境交互</td>
+            <td>Codex/Claude Code 操作文件、终端、测试、浏览器或桌面环境。</td>
+            <td>它操作的是地图环境: POI、关键词搜索、静态地图、卫星图。垂类环境定义得不错。</td>
+          </tr>
+          <tr>
+            <td>奖励与评测</td>
+            <td>代码 agent 用测试是否通过、issue 是否 resolved、终端任务是否完成。</td>
+            <td>地理定位有天然 reward: 米级距离。这个比很多 agent 任务更干净。</td>
+          </tr>
+          <tr>
+            <td>长程能力</td>
+            <td>2026 的强 agent 已经强调多步执行、恢复错误、持续上下文。</td>
+            <td>它有多轮工具调用和 parallel TTS，但长程规划还比较模板化，更多是多路采样补偿。</td>
+          </tr>
+          <tr>
+            <td>工程成熟度</td>
+            <td>头部产品有权限、沙箱、状态管理、日志、回滚、可观测性。</td>
+            <td>研究代码级别: 可读、能拆、能复现一部分，但离稳态平台还有距离。</td>
+          </tr>
+          <tr>
+            <td>段位判断</td>
+            <td>通用/代码 agent 是 S/A 档，平台化程度很高。</td>
+            <td><strong>B+ 到 A- 档垂类研究</strong>: idea 扎实，任务闭环漂亮，代码可用但不够硬。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="guide-callout">
+        <p>
+          我会把它类比成“地理定位领域的早期 SWE-agent”: 不一定是最终产品形态，但把一个垂类任务该怎么 agent 化讲清楚了。
+          它真正值得学的是任务工程，而不是某个模型名或某个 prompt。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">算法工程师怎么读它的实现质量</h2>
+      <div class="guide-card-grid">
+        <div class="guide-panel">
+          <h3>1. 数据合同做得清楚</h3>
+          <p><code>preprocess_thinking_with_map.py</code> 把 prompt、图片路径、ground truth、tool kwargs 都放进 parquet。这个设计好，rollout 侧不需要猜样本上下文。</p>
+        </div>
+        <div class="guide-panel">
+          <h3>2. Tool schema 是正路</h3>
+          <p>AMap/Google/zoom 都通过 YAML 声明成 function-call 风格工具。换工具、限流、URL、参数 schema 都能配置，这是 agent 工程的基本盘。</p>
+        </div>
+        <div class="guide-panel">
+          <h3>3. Reward 很干净</h3>
+          <p>经纬度 JSON -> geodesic distance -> 分段 score。比很多“让 LLM 判断好坏”的 agent reward 更可靠，也更容易 debug。</p>
+        </div>
+      </div>
+
+      <div class="guide-callout guide-warning">
+        <p>
+          但别被 pipeline 图骗到: 代码不是“下载即稳定跑”。默认训练脚本里 `PROJECT_DIR`、数据路径、API key 都是模板；
+          `tool_server` 的 Google 分支存在属性名/参数问题；默认 `train_thinking_with_map.sh` 是 8 节点 64 卡配置。
+          这不是灾难，但说明它是 research release，不是工业 SDK。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-section hero is-light">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">最值得夸的 5 个点</h2>
+      <ol class="guide-list">
+        <li><strong>任务选得足够“agent 原生”:</strong> 地理定位天然需要看图、查地图、验证空间关系，不是为了 agent 而 agent。</li>
+        <li><strong>reward 设计少废话:</strong> Acc@500m/2km/10km/25km/200km/750km 都能从坐标直接算，训练和评测统一。</li>
+        <li><strong>工具环境有现实价值:</strong> POI detail、关键词搜索、静态地图、卫星图不是装饰，确实能修正视觉模型的幻觉。</li>
+        <li><strong>parallel TTS 是实用主义:</strong> 地理定位第一条推理链经常走偏，多采样再 verifier，比强迫单链完美更靠谱。</li>
+        <li><strong>代码把论文核心拆开了:</strong> 数据、工具、训练、reward、TTS 都能独立看，适合算法工程师迁移到别的垂类任务。</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">不足和包装成分</h2>
+      <table class="guide-table">
+        <thead>
+          <tr>
+            <th>问题</th>
+            <th>具体表现</th>
+            <th>影响</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>默认复现门槛高</td>
+            <td>训练脚本默认 `N_NODES=8`、每节点 8 卡，`rollout.n=16`。</td>
+            <td>普通实验室很难完整复刻论文训练，只能做缩小版。</td>
+          </tr>
+          <tr>
+            <td>全球定位叙事偏满</td>
+            <td>默认工具配置是 AMap，描述也强调“中国区域”；Google config 有但不够顺滑。</td>
+            <td>中国场景更扎实，海外/global 复现需要额外工程修补。</td>
+          </tr>
+          <tr>
+            <td>tool server 有未打磨处</td>
+            <td>`APICallEngine` 构造参数、Google key 属性、`proxies` 等路径存在风险。</td>
+            <td>一旦切到 Google/global 工具，容易遇到启动或运行时错误。</td>
+          </tr>
+          <tr>
+            <td>TTS 偏离线</td>
+            <td>`parallel_tts/` 是 regroup + verifier 脚本，不是统一在线 inference pipeline。</td>
+            <td>论文方法成立，但工程产品化还要再封装。</td>
+          </tr>
+          <tr>
+            <td>有一点 benchmark 包装感</td>
+            <td>MAPBench 是新 benchmark，工具能力、数据来源和区域覆盖共同决定结果。</td>
+            <td>结果要看任务设置，不能简单外推成“模型会全球定位”。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="guide-section hero is-light">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">你有 4*A100 80G，怎么最快上手</h2>
+      <p>
+        你的机器够强，但不建议第一步直接照论文 64 卡训练。更稳的路线是三段走:
+        <strong>先跑通推理和工具，再跑评测 dump，最后做小规模 GRPO。</strong>
+      </p>
+
+      <h3 class="title is-4 mt-5">阶段 0: 准备环境和数据</h3>
+      <pre><code>conda create -n mapagent python=3.12
+conda activate mapagent
+pip install torch==2.8.0
+pip install vllm==0.11.0
+cd Thinking-with-Map/verl/scripts
+bash install_vllm_sglang_mcore.sh
+cd ../
+pip install --no-deps -e .
+pip install playwright "uvicorn[standard]" json5 fastapi redis geopy pandas pyarrow</code></pre>
+
+      <p>
+        下载 MAPBench-V2、模型 `Thinking-with-Map-30B-A3B` 或 base `Qwen3-VL-30B-A3B-Instruct` 后，先跑预处理:
+      </p>
+      <pre><code>cd verl/examples/data_preprocess
+bash preprocess_thinking_with_map.sh</code></pre>
+
+      <h3 class="title is-4 mt-5">阶段 1: 先跑模型服务和 demo</h3>
+      <p>
+        30B-A3B 在 4 张 A100 80G 上更稳的启动方式是 tensor parallel 4。先别急着 RL，先确认模型能回答、图片能进、demo 能通。
+      </p>
+      <pre><code>vllm serve /path/to/Thinking-with-Map-30B-A3B \
+  --tensor-parallel-size 4 \
+  --port 8002</code></pre>
+
+      <h3 class="title is-4 mt-5">阶段 2: 跑单节点评测，不要先训练</h3>
+      <p>
+        修改 `verl/geoagent_scripts/test_thinking_with_map.sh`:
+      </p>
+      <ul class="guide-list">
+        <li><code>n_gpus_per_node=4</code></li>
+        <li><code>actor_rollout_ref.rollout.tensor_model_parallel_size=4</code> 或保守用 2</li>
+        <li><code>actor_rollout_ref.rollout.n=2</code> 到 4</li>
+        <li><code>data.val_batch_size=8</code> 或 16</li>
+        <li>把 <code>PROJECT_DIR</code>、<code>BASE_MODEL</code>、<code>VALID_FILES</code> 改成真实路径</li>
+      </ul>
+      <p>
+        这一阶段目标不是刷分，而是确认 VeRL rollout、tool config、reward、dump 文件都能跑通。
+      </p>
+
+      <h3 class="title is-4 mt-5">阶段 3: 小规模 GRPO smoke test</h3>
+      <p>
+        4 卡不建议复刻论文配置。建议只拿 200 到 1000 条样本，做 1 个短 epoch:
+      </p>
+      <ul class="guide-list">
+        <li><code>N_NODES=1</code>, <code>N_GPUS_PER_NODE=4</code></li>
+        <li><code>data.train_batch_size=16</code> 或 32</li>
+        <li><code>actor_rollout_ref.actor.ppo_mini_batch_size=16</code></li>
+        <li><code>actor_rollout_ref.rollout.n=2</code> 或 4</li>
+        <li><code>actor_rollout_ref.rollout.gpu_memory_utilization=0.6</code> 起步</li>
+      </ul>
+      <div class="guide-callout">
+        <p>
+          我对 4*A100 的建议很明确: <strong>可以做工程复现和小规模行为验证，不建议声称完整复刻论文训练。</strong>
+          真正论文级训练配置写的是 8 节点 64 卡，你的机器更适合验证方法链条、调工具、做 ablation 和 TTS。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">一句接地气总结</h2>
+      <div class="guide-callout">
+        <p>
+          <strong>Thinking with Map 的段位不是“模型又会了一个神奇能力”，而是“把一个垂类任务 agent 化的 recipe 做出来了”。</strong>
+          作为论文，它有亮点；作为代码，它能学但要修；作为产品，它还早；作为 2026 垂类 agent 研究案例，它很值得拆。
+          如果你手上有 4*A100，最聪明的打法不是硬复刻大训练，而是把它当作地图工具 agent 的工程模板，先复现推理和评测，再小规模训练验证工具策略是否真的变好。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3">原先的核心概念速读</h2>
       <div class="guide-card-grid">
         <div class="guide-panel">
           <h3>它不是普通 RAG</h3>
@@ -358,7 +599,7 @@
         <li><a href="https://www.swebench.com/" target="_blank">SWE-bench Leaderboards</a></li>
       </ul>
       <p class="guide-footer-note">
-        本文写于 2026-07-08，面向算法工程师做工程解读与判断，不替代论文原文。
+        本文更新于 2026-07-08，面向算法工程师做工程解读与判断，不替代论文原文。
       </p>
     </div>
   </section>
