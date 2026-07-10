@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Thinking with Map 面向算法工程师的深度实现分析、2026 年 6 月垂类 Agent 段位评价与 4*A100 复现路线">
+  <meta name="description" content="Thinking with Map 面向算法工程师的深度实现分析、2026 年 7 月垂类 Agent 段位评价与 4*A100 复现路线">
   <meta property="og:title" content="Thinking with Map 工程解读">
   <meta property="og:description" content="从算法工程视角理解地图增强 agent、RL 训练、parallel TTS、包装成分和 4*A100 快速复现。">
   <title>Thinking with Map 工程解读</title>
@@ -176,54 +176,53 @@
 
   <section class="guide-section hero is-light">
     <div class="container is-max-desktop">
-      <h2 class="title is-3">2026 年 6 月垂类 Agent 里，它算什么段位</h2>
+      <h2 class="title is-3">放到 2026 年 7 月垂类 Agent 里，它算什么段位</h2>
       <p>
-        到 2026 年 6 月，agent 主线已经从“能不能调用工具”变成“能不能在真实环境中长程执行、验证、纠错”。
-        OpenAI Codex 代表的是软件工程垂类 agent，强调沙箱、读写代码、运行测试、并行任务；Anthropic Claude Code 的使用报告也显示，agent 开始从补全工具走向端到端任务执行，但人类的领域判断仍然很关键。
-        SWE-bench 系列则把社区注意力拉到真实 issue、真实仓库、真实测试上。
+        到 2026 年中，垂类 agent 的门槛不再是“会不会调 API”，而是环境是否真实可执行、每一步是否能验证、失败后能否恢复、结果能否脱离自家 benchmark 站得住。
+        GeoAgentBench 已经把空间分析推进到 117 个原子 GIS 工具、动态运行时反馈和参数执行准确度；MapAgent 则把规划与地图工具执行拆层。以这个标准看，Thinking with Map 的定位很清楚：它在<strong>图像地理定位这个窄任务</strong>中，闭环设计相当完整，但还不是通用 GeoAI 工作流 agent。
       </p>
 
       <table class="guide-table">
         <thead>
           <tr>
             <th>维度</th>
-            <th>顶级通用/代码 Agent 的状态</th>
+            <th>2026 垂类 agent 的高标准</th>
             <th>Thinking with Map 的位置</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>环境交互</td>
-            <td>Codex/Claude Code 操作文件、终端、测试、浏览器或桌面环境。</td>
-            <td>它操作的是地图环境: POI、关键词搜索、静态地图、卫星图。垂类环境定义得不错。</td>
+            <td>工具有状态、可执行，且能暴露运行时反馈。</td>
+            <td>POI、关键词、静态图、卫星图都进入 rollout。地图是任务环境而非 prompt 装饰，这一点做对了。</td>
           </tr>
           <tr>
             <td>奖励与评测</td>
-            <td>代码 agent 用测试是否通过、issue 是否 resolved、终端任务是否完成。</td>
-            <td>地理定位有天然 reward: 米级距离。这个比很多 agent 任务更干净。</td>
+            <td>终局正确性、过程参数和成本都能被衡量。</td>
+            <td>坐标距离是很干净的终局 reward；但代码没有把“工具是否有效、参数是否合理、调用成本”做成显式过程奖励。</td>
           </tr>
           <tr>
             <td>长程能力</td>
-            <td>2026 的强 agent 已经强调多步执行、恢复错误、持续上下文。</td>
-            <td>它有多轮工具调用和 parallel TTS，但长程规划还比较模板化，更多是多路采样补偿。</td>
+            <td>规划、纠错、重试和状态管理要可见且可复现。</td>
+            <td>有最多 8 轮工具交互和 parallel TTS，但没有显式 planner 或工具失败恢复策略；更多是多路采样补偿单链走偏。</td>
           </tr>
           <tr>
             <td>工程成熟度</td>
-            <td>头部产品有权限、沙箱、状态管理、日志、回滚、可观测性。</td>
-            <td>研究代码级别: 可读、能拆、能复现一部分，但离稳态平台还有距离。</td>
+            <td>可观测、可测试、可部署，且不同区域/工具路由稳定。</td>
+            <td>研究代码级：配置和核心链路可读，但 API key、路径、Redis、分布式启动都需手工接通；海外 Google 路径尚未达稳定可用。</td>
           </tr>
           <tr>
             <td>段位判断</td>
-            <td>通用/代码 agent 是 S/A 档，平台化程度很高。</td>
-            <td><strong>B+ 到 A- 档垂类研究</strong>: idea 扎实，任务闭环漂亮，代码可用但不够硬。</td>
+            <td>不是“模型会工具”而是“可靠交付一类真实任务”。</td>
+            <td><strong>B+ 到 A- 档垂类研究，B 档工程 release。</strong>方法和任务定义强于工程完成度；作为地图定位 recipe 值得拆，作为可直接部署的全球服务还不够。</td>
           </tr>
         </tbody>
       </table>
 
       <div class="guide-callout">
         <p>
-          我会把它类比成“地理定位领域的早期 SWE-agent”: 不一定是最终产品形态，但把一个垂类任务该怎么 agent 化讲清楚了。
-          它真正值得学的是任务工程，而不是某个模型名或某个 prompt。
+          它更像“地理定位领域的早期 agent recipe”：不一定是最终产品形态，但把任务、工具、可验证 reward 和多轨迹选择串成了一个有效闭环。
+          真正值得迁移的是任务工程，而不是某个模型名、某个系统 prompt，或单一 leaderboard 数字。
         </p>
       </div>
     </div>
@@ -250,7 +249,7 @@
       <div class="guide-callout guide-warning">
         <p>
           但别被 pipeline 图骗到: 代码不是“下载即稳定跑”。默认训练脚本里 `PROJECT_DIR`、数据路径、API key 都是模板；
-          `tool_server` 的 Google 分支存在属性名/参数问题；默认 `train_thinking_with_map.sh` 是 8 节点 64 卡配置。
+          `tool_server` 的 Google 分支存在构造参数漏传、私有属性引用错误和未定义代理变量；默认 `train_thinking_with_map.sh` 是 8 节点 64 卡配置。
           这不是灾难，但说明它是 research release，不是工业 SDK。
         </p>
       </div>
@@ -294,8 +293,8 @@
           </tr>
           <tr>
             <td>tool server 有未打磨处</td>
-            <td>`APICallEngine` 构造参数、Google key 属性、`proxies` 等路径存在风险。</td>
-            <td>一旦切到 Google/global 工具，容易遇到启动或运行时错误。</td>
+            <td>启动时未传 `serper_api_key` / `google_map_api_key`；请求代码却引用不存在的公开属性，并在 static map 分支使用未定义的 `proxies`。</td>
+            <td>Google/search/global 路径按当前代码会启动失败或运行时报错，不能把 YAML 配置的存在当成该路径已验证。</td>
           </tr>
           <tr>
             <td>TTS 偏离线</td>
@@ -304,8 +303,8 @@
           </tr>
           <tr>
             <td>有一点 benchmark 包装感</td>
-            <td>MAPBench 是新 benchmark，工具能力、数据来源和区域覆盖共同决定结果。</td>
-            <td>结果要看任务设置，不能简单外推成“模型会全球定位”。</td>
+            <td>论文报告相对 Gemini-3-Pro grounded mode 的 Acc@500m 从 8.0% 到 22.1%，但 MAPBench 与工具可达性、区域/图像分布耦合很强。</td>
+            <td>这说明该闭环对该任务有效；不能直接外推成基础模型获得了无工具的通用全球定位能力，更不能外推为通用 GIS agent。</td>
           </tr>
         </tbody>
       </table>
@@ -339,21 +338,21 @@ bash preprocess_thinking_with_map.sh</code></pre>
 
       <h3 class="title is-4 mt-5">阶段 1: 先跑模型服务和 demo</h3>
       <p>
-        30B-A3B 在 4 张 A100 80G 上更稳的启动方式是 tensor parallel 4。先别急着 RL，先确认模型能回答、图片能进、demo 能通。
+        官方 README 写明已发布的 30B-A3B 推理至少需要 2 张 80GB 卡。你的 4 张 A100 是舒适的复现资源：先用 TP=2 留两卡给后续服务/排障；只有在单实例吞吐或上下文确实卡住时再升 TP=4。先别急着 RL，先确认模型、图片、工具和 demo 都通。
       </p>
       <pre><code>vllm serve /path/to/Thinking-with-Map-30B-A3B \
-  --tensor-parallel-size 4 \
+  --tensor-parallel-size 2 \
   --port 8002</code></pre>
 
       <h3 class="title is-4 mt-5">阶段 2: 跑单节点评测，不要先训练</h3>
       <p>
-        修改 `verl/geoagent_scripts/test_thinking_with_map.sh`:
+        从仓库的 `test_thinking_with_map.sh` 复制出自己的 `test_4a100.sh`，不要直接修改官方脚本。建议先把并发压低，优先获得可诊断的 dump：
       </p>
       <ul class="guide-list">
         <li><code>n_gpus_per_node=4</code></li>
-        <li><code>actor_rollout_ref.rollout.tensor_model_parallel_size=4</code> 或保守用 2</li>
+        <li><code>actor_rollout_ref.rollout.tensor_model_parallel_size=2</code>，用两组 TP=2 rollout；显存仍有余量再测试 TP=4</li>
         <li><code>actor_rollout_ref.rollout.n=2</code> 到 4</li>
-        <li><code>data.val_batch_size=8</code> 或 16</li>
+        <li><code>data.val_batch_size=8</code>，稳定后再试 16</li>
         <li>把 <code>PROJECT_DIR</code>、<code>BASE_MODEL</code>、<code>VALID_FILES</code> 改成真实路径</li>
       </ul>
       <p>
@@ -362,14 +361,14 @@ bash preprocess_thinking_with_map.sh</code></pre>
 
       <h3 class="title is-4 mt-5">阶段 3: 小规模 GRPO smoke test</h3>
       <p>
-        4 卡不建议复刻论文配置。建议只拿 200 到 1000 条样本，做 1 个短 epoch:
+        4 卡不建议复刻论文配置。建议只拿 200 到 1000 条样本做 1 个短 epoch，并保留每条 trajectory、工具请求和距离分布，以便判断提升到底来自工具策略还是多采样:
       </p>
       <ul class="guide-list">
         <li><code>N_NODES=1</code>, <code>N_GPUS_PER_NODE=4</code></li>
-        <li><code>data.train_batch_size=16</code> 或 32</li>
+        <li><code>data.train_batch_size=16</code> 起步，稳定后再到 32</li>
         <li><code>actor_rollout_ref.actor.ppo_mini_batch_size=16</code></li>
         <li><code>actor_rollout_ref.rollout.n=2</code> 或 4</li>
-        <li><code>actor_rollout_ref.rollout.gpu_memory_utilization=0.6</code> 起步</li>
+        <li><code>actor_rollout_ref.rollout.gpu_memory_utilization=0.55</code> 起步；多模态长上下文 OOM 时先降 response length 和 <code>n</code></li>
       </ul>
       <div class="guide-callout">
         <p>
@@ -490,93 +489,6 @@ bash preprocess_thinking_with_map.sh</code></pre>
 
   <section class="guide-section hero is-light">
     <div class="container is-max-desktop">
-      <h2 class="title is-3">结合 2026 Agent 进展看，它站在哪个位置</h2>
-      <p>
-        2026 年 agent 的主线已经很清楚: 从聊天式助手走向能使用工具、能操作环境、能长时间执行任务的系统。
-        OpenAI 的 Computer-Using Agent 把视觉、GUI 操作和强化学习放到一起；Codex 类 agent 开始处理更长、更跨职能的软件与知识工作；
-        Anthropic 的 Claude Code 研究也显示，工程师越来越像 agent 的任务编排者，而不是逐行代码操作者。
-      </p>
-
-      <div class="guide-callout">
-        <p>
-          在这个大背景下，<strong>Thinking with Map 是一个很接地气的垂直 agent 范例</strong>:
-          它不追求“通用万能代理”，而是选了一个边界清晰、评价明确、工具价值极高的任务，把 agent 能力做深。
-        </p>
-      </div>
-
-      <table class="guide-table">
-        <thead>
-          <tr>
-            <th>2026 agent 方向</th>
-            <th>Thinking with Map 的对应点</th>
-            <th>我的工程评价</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>工具使用从可选变成核心能力</td>
-            <td>地图、POI、搜索、图像放大都在 rollout 内部</td>
-            <td>方向正确。地理定位不接地图，等于让模型闭眼走路。</td>
-          </tr>
-          <tr>
-            <td>RL 训练 agent 行为</td>
-            <td>用 GRPO + 距离奖励训练多轮工具使用</td>
-            <td>比单纯 SFT 更合理，因为工具调用策略很难靠静态答案学全。</td>
-          </tr>
-          <tr>
-            <td>长任务需要多路探索</td>
-            <td>parallel TTS 对同图生成多条轨迹，再 verifier 收口</td>
-            <td>很实用。定位任务里第一条推理链经常走偏，多采样比硬凹单链更靠谱。</td>
-          </tr>
-          <tr>
-            <td>Agent 评测越来越强调真实环境</td>
-            <td>MAPBench 来自真实图片，并用米级距离评估</td>
-            <td>比纯问答 benchmark 更贴近工程，但工具 API 的区域覆盖会影响泛化。</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="guide-section">
-    <div class="container is-max-desktop">
-      <h2 class="title is-3">接地气评价: 强在哪里，短板在哪里</h2>
-      <div class="columns">
-        <div class="column">
-          <div class="guide-panel">
-            <h3>强点</h3>
-            <ul class="guide-list">
-              <li><strong>任务选得好:</strong> 地理定位天然需要外部地图，工具增强不是摆设。</li>
-              <li><strong>奖励清楚:</strong> 经纬度距离能直接算，避免很多主观打分噪声。</li>
-              <li><strong>系统闭环完整:</strong> 数据、工具、RL、评测、TTS 都有对应代码。</li>
-              <li><strong>parallel TTS 很务实:</strong> 地理定位有多解和误导线索，多路径探索能明显降低单链失误。</li>
-            </ul>
-          </div>
-        </div>
-        <div class="column">
-          <div class="guide-panel">
-            <h3>短板</h3>
-            <ul class="guide-list">
-              <li><strong>工程成熟度还不算高:</strong> tool server 和 Google 工具链仍有研究原型痕迹。</li>
-              <li><strong>默认路径偏 AMap:</strong> 中国区域支持更完整，全球泛化依赖 Google/search 路径继续补强。</li>
-              <li><strong>TTS 还偏离线:</strong> 当前更像脚本后处理，尚未整合成统一 serving pipeline。</li>
-              <li><strong>工具噪声会反噬:</strong> 地图检索错了，agent 会很自信地沿错误线索推下去。</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div class="guide-callout guide-warning">
-        <p>
-          如果你是算法工程师，我建议把它看成一个“可学习的工具型 agent recipe”，而不是一个已经完全产品化的定位服务。
-          真正值得借鉴的是: 任务环境怎么定义、工具 schema 怎么接入、reward 怎么写、并行轨迹怎么做 verifier。
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <section class="guide-section hero is-light">
-    <div class="container is-max-desktop">
       <h2 class="title is-3">如果我要继续工程化，会优先改什么</h2>
       <ol class="guide-list">
         <li><strong>统一中国/海外工具路由:</strong> 不要让 AMap config 和 Google config 靠人工切换，应该按区域和置信度自动选。</li>
@@ -593,13 +505,13 @@ bash preprocess_thinking_with_map.sh</code></pre>
       <h2 class="title is-3">参考与背景阅读</h2>
       <ul class="guide-list">
         <li><a href="https://arxiv.org/abs/2601.05432" target="_blank">Thinking with Map: Reinforced Parallel Map-Augmented Agent for Geolocalization</a></li>
-        <li><a href="https://openai.com/index/computer-using-agent/" target="_blank">OpenAI: Computer-Using Agent</a></li>
-        <li><a href="https://openai.com/index/how-agents-are-transforming-work/" target="_blank">OpenAI: How agents are transforming work</a></li>
-        <li><a href="https://www.anthropic.com/research/claude-code-expertise" target="_blank">Anthropic: Agentic coding and persistent returns to expertise</a></li>
-        <li><a href="https://www.swebench.com/" target="_blank">SWE-bench Leaderboards</a></li>
+        <li><a href="https://aclanthology.org/2026.findings-acl.894/" target="_blank">ACL Findings 2026 version of Thinking with Map</a></li>
+        <li><a href="https://arxiv.org/abs/2604.13888" target="_blank">GeoAgentBench: Dynamic Execution Benchmark for Tool-Augmented Agents in Spatial Analysis</a></li>
+        <li><a href="https://aclanthology.org/2026.findings-eacl.67/" target="_blank">MapAgent: Hierarchical Agent for Geospatial Reasoning with Dynamic Map Tool Integration</a></li>
+        <li><a href="https://arxiv.org/abs/2604.24919" target="_blank">Agentic AI for Remote Sensing: Technical Challenges and Research Directions</a></li>
       </ul>
       <p class="guide-footer-note">
-        本文更新于 2026-07-08，面向算法工程师做工程解读与判断，不替代论文原文。
+        本文于 2026-07-10 根据 arXiv/ACL 论文、官方仓库 main 分支和 2026 年中 GeoAI agent 文献复核更新；面向算法工程师做工程判断，不替代原论文或独立复现实验。
       </p>
     </div>
   </section>
